@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Professional Quiz System</title>
+<style>
+
+body {
+font-family: Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+.container {
+display:flex;
+height:100vh;
+}
+
+/* LEFT SIDE - QUESTION AREA */
+.question-area {
+flex:3;
+padding:20px;
+overflow-y:auto;
+background:white;
+}
+
+.option {
+margin:8px 0;
+padding:10px;
+border:1px solid #ccc;
+border-radius:5px;
+cursor:pointer;
+}
+
+.option.selected { background:#d0e6ff; }
+.option.correct { background:#c8f7c5; }
+.option.wrong { background:#f7c5c5; }
+
+button {
+margin:5px;
+padding:8px 15px;
+}
+
+/* RIGHT SIDE - NAVIGATION PANEL */
+.nav-area {
+flex:1;
+background:#222;
+color:white;
+padding:15px;
+position:fixed;
+right:0;
+top:0;
+height:100%;
+overflow-y:auto;
+width:260px;
+}
+
+.summary {
+margin-bottom:15px;
+}
+
+.nav-grid {
+display:flex;
+flex-wrap:wrap;
+gap:5px;
+}
+
+.nav-btn {
+width:35px;
+height:35px;
+border:none;
+cursor:pointer;
+background:#555;
+color:white;
+}
+
+.nav-btn.current { background:#1e90ff; }
+.nav-btn.answered { background:#28a745; }
+.nav-btn.notanswered { background:#dc3545; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="question-area" style="margin-right:260px;">
+<h2>Vedas MCQ Quiz</h2>
+
+<div id="progress"></div>
+<div id="question"></div>
+<div id="options"></div>
+
+<button onclick="prevQuestion()">Previous</button>
+<button onclick="nextQuestion()">Next</button>
+<button onclick="showResult()">Submit</button>
+
+<div id="explanation"></div>
+<div id="result"></div>
+
+</div>
+
+<div class="nav-area">
+
+<h3>Question Palette</h3>
+
+<div class="summary">
+Answered: <span id="answeredCount">0</span><br>
+Not Answered: <span id="notAnsweredCount">0</span><br>
+Not Visited: <span id="notVisitedCount">0</span>
+</div>
+
+<div class="nav-grid" id="navPanel"></div>
+
+</div>
+
+</div>
+
+<script>
+
+const quizData = [
+{
+question: "Who resolved to constitute India into a Sovereign, Socialist, Secular, Democratic Republic? / இந்தியாவை சுயாட்சி, சமத்துவ, மதச்சார்பற்ற, ஜனநாயக குடியரசாக அமைக்க தீர்மானித்தது யார்?",
+options: ["The British Government","The President of India","The People of India","The Parliament"],
+answer: 2,
+explanation: "The Preamble begins with 'We, the People of India'. / முன்னுரை 'இந்திய மக்கள் நாங்கள்' என்று தொடங்குகிறது."
+},
+{
+question: "India is declared as which type of Republic in the Preamble? / முன்னுரையில் இந்தியா எந்த வகை குடியரசாக அறிவிக்கப்பட்டுள்ளது?",
+options: ["Monarchical Republic","Federal Republic","Sovereign Socialist Secular Democratic Republic","Unitary Republic"],
+answer: 2,
+explanation: "India is described as a Sovereign, Socialist, Secular, Democratic Republic. / இந்தியா சுயாட்சி, சமத்துவ, மதச்சார்பற்ற, ஜனநாயக குடியரசாக குறிப்பிடப்பட்டுள்ளது."
+},
+{
+question: "Which of the following ideals are secured to all citizens? / அனைத்து குடிமக்களுக்கும் வழங்கப்படுவது கீழ்கண்டவற்றில் எது?",
+options: ["Justice, Liberty, Equality, Fraternity","Power, Wealth, Status, Fame","Rights, Duties, Powers, Authority","Law, Order, Army, Police"],
+answer: 0,
+explanation: "The Preamble secures Justice, Liberty, Equality and Fraternity. / முன்னுரை நீதி, சுதந்திரம், சமத்துவம் மற்றும் சகோதரத்துவத்தை உறுதி செய்கிறது."
+},
+{
+question: "The word 'Sovereign' in the Preamble means what? / முன்னுரையில் 'Sovereign' என்பதன் அர்த்தம் என்ன?",
+options: ["Dependent on other nations","Ruled by a king","Independent and supreme authority","Controlled by military"],
+answer: 2,
+explanation: "Sovereign means India is independent and has supreme authority. / சுயாட்சி என்பது இந்தியா முழுமையான சுதந்திரமும் உச்ச அதிகாரமும் உடையது என்பதைக் குறிக்கும்."
+}
+];
+
+let current = 0;
+let answers = new Array(quizData.length).fill(null);
+let visited = new Array(quizData.length).fill(false);
+
+function loadQuestion(){
+
+visited[current] = true;
+
+let q = quizData[current];
+
+document.getElementById("progress").innerText =
+"Question " + (current+1) + " of " + quizData.length;
+
+document.getElementById("question").innerText = q.question;
+
+let html = "";
+
+for(let i=0;i<q.options.length;i++){
+
+let className = "option";
+
+if(answers[current] !== null){
+if(i === q.answer) className += " correct";
+else if(i === answers[current]) className += " wrong";
+}
+
+html += '<div class="'+className+'" onclick="selectAnswer('+i+')">'+q.options[i]+'</div>';
+}
+
+document.getElementById("options").innerHTML = html;
+
+if(answers[current] !== null){
+document.getElementById("explanation").innerHTML =
+"<b>Explanation:</b> " + q.explanation;
+}else{
+document.getElementById("explanation").innerHTML = "";
+}
+
+loadNavigation();
+updateSummary();
+}
+
+function selectAnswer(index){
+answers[current] = index;
+loadQuestion();
+}
+
+function nextQuestion(){
+if(current < quizData.length-1){
+current++;
+loadQuestion();
+}
+}
+
+function prevQuestion(){
+if(current > 0){
+current--;
+loadQuestion();
+}
+}
+
+function goToQuestion(i){
+current = i;
+loadQuestion();
+}
+
+function loadNavigation(){
+
+let navHTML = "";
+
+for(let i=0;i<quizData.length;i++){
+
+let className = "nav-btn";
+
+if(i === current) className += " current";
+else if(answers[i] !== null) className += " answered";
+else if(visited[i]) className += " notanswered";
+
+navHTML += '<button class="'+className+'" onclick="goToQuestion('+i+')">'+(i+1)+'</button>';
+}
+
+document.getElementById("navPanel").innerHTML = navHTML;
+}
+
+function updateSummary(){
+
+let answered = answers.filter(a=>a!==null).length;
+let notVisited = visited.filter(v=>v===false).length;
+let notAnswered = quizData.length - answered - notVisited;
+
+document.getElementById("answeredCount").innerText = answered;
+document.getElementById("notAnsweredCount").innerText = notAnswered;
+document.getElementById("notVisitedCount").innerText = notVisited;
+}
+
+function showResult(){
+
+let score = 0;
+
+for(let i=0;i<quizData.length;i++){
+if(answers[i] === quizData[i].answer) score++;
+}
+
+document.getElementById("result").innerHTML =
+"<h3>Your Score: "+score+" / "+quizData.length+"</h3>";
+}
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
