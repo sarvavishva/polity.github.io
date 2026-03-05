@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Professional Quiz System</title>
+<title>Professional Multi-Page Quiz</title>
 <style>
 
 body {
@@ -15,12 +15,12 @@ display:flex;
 height:100vh;
 }
 
-/* LEFT SIDE - QUESTION AREA */
 .question-area {
 flex:3;
 padding:20px;
 overflow-y:auto;
 background:white;
+margin-right:260px;
 }
 
 .option {
@@ -31,16 +31,21 @@ border-radius:5px;
 cursor:pointer;
 }
 
-.option.selected { background:#d0e6ff; }
 .option.correct { background:#c8f7c5; }
 .option.wrong { background:#f7c5c5; }
 
 button {
 margin:5px;
 padding:8px 15px;
+cursor:pointer;
 }
 
-/* RIGHT SIDE - NAVIGATION PANEL */
+.restart-btn {
+background:#ff9800;
+color:white;
+border:none;
+}
+
 .nav-area {
 flex:1;
 background:#222;
@@ -77,14 +82,29 @@ color:white;
 .nav-btn.answered { background:#28a745; }
 .nav-btn.notanswered { background:#dc3545; }
 
+select {
+padding:6px;
+margin:5px 0;
+}
+
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<div class="question-area" style="margin-right:260px;">
-<h2>POLITY-PREAMLE MCQ Quiz</h2>
+<div class="question-area">
+
+<h2>CLASSICAL DANCE MCQ Quiz</h2>
+
+<label><b>Select Page:</b></label><br>
+<select id="pageSelect"></select>
+
+<label><b>Select Mode:</b></label><br>
+<select id="modeSelect">
+<option value="false">Non Shuffle</option>
+<option value="true">Shuffle</option>
+</select>
 
 <div id="progress"></div>
 <div id="question"></div>
@@ -93,6 +113,7 @@ color:white;
 <button onclick="prevQuestion()">Previous</button>
 <button onclick="nextQuestion()">Next</button>
 <button onclick="showResult()">Submit</button>
+<button class="restart-btn" onclick="restartPage()">Restart Page</button>
 
 <div id="explanation"></div>
 <div id="result"></div>
@@ -117,7 +138,13 @@ Not Visited: <span id="notVisitedCount">0</span>
 
 <script>
 
-const quizData = [
+// =============================
+// ADD PAGES HERE (Only once per page)
+// =============================
+
+const allPages = {
+
+"Page 1": [
 {
 question: "Who resolved to constitute India into a Sovereign, Socialist, Secular, Democratic Republic? / இந்தியாவை சுயாட்சி, சமத்துவ, மதச்சார்பற்ற, ஜனநாயக குடியரசாக அமைக்க தீர்மானித்தது யார்?",
 options: ["The British Government","The President of India","The People of India","The Parliament"],
@@ -262,11 +289,110 @@ options: ["Berubari Case","Kesavananda Case","LIC of India Case (1995)","Indira 
 answer: 2,
 explanation: "LIC of India Case (1995) confirmed Preamble as an integral part. / 1995 LIC வழக்கில் முன்னுரை முக்கிய அங்கம் என்று உறுதிப்படுத்தப்பட்டது."
 }
-];
 
+],
+
+"Page 2": [
+{
+question: "Sattriya classical dance belongs to which state?",
+options: ["Assam","Kerala","Tamil Nadu","Odisha"],
+correctAnswer: "Assam",
+explanation: "Sattriya belongs to Assam."
+}
+],
+
+"Page 3": [
+{
+question: "Mohiniyattam belongs to which state?",
+options: ["Kerala","Odisha","Assam","Tamil Nadu"],
+correctAnswer: "Kerala",
+explanation: "Mohiniyattam belongs to Kerala."
+}
+],
+
+"Page 4": [
+{
+question: "Bharatanatyam originated in?",
+options: ["Tamil Nadu","Kerala","UP","Manipur"],
+correctAnswer: "Tamil Nadu",
+explanation: "Bharatanatyam originated in Tamil Nadu."
+}
+],
+
+"Page 5": [
+{
+question: "Kathak belongs to which state?",
+options: ["Uttar Pradesh","Kerala","Assam","Odisha"],
+correctAnswer: "Uttar Pradesh",
+explanation: "Kathak belongs to Uttar Pradesh."
+}
+],
+
+"Page 6": [
+{
+question: "Kathak belongs to which state?",
+options: ["Uttar Pradesh","Kerala","Assam","Odisha"],
+correctAnswer: "Uttar Pradesh",
+explanation: "Kathak belongs to Uttar Pradesh."
+},
+{
+question: "raja belongs to which state?",
+options: ["Uttar Pradesh","Kerala","Assam","Odisha"],
+correctAnswer: "Uttar Pradesh",
+explanation: "Kathak belongs to Uttar Pradesh."
+}
+]
+
+};
+
+// =============================
+
+let quizData = [];
 let current = 0;
-let answers = new Array(quizData.length).fill(null);
-let visited = new Array(quizData.length).fill(false);
+let answers = [];
+let visited = [];
+let currentPage = "";
+let shuffleMode = false;
+
+// =============================
+
+function shuffleArray(array){
+for(let i = array.length - 1; i > 0; i--){
+let j = Math.floor(Math.random() * (i + 1));
+[array[i], array[j]] = [array[j], array[i]];
+}
+return array;
+}
+
+// =============================
+
+function loadPage(pageName){
+
+currentPage = pageName;
+
+quizData = JSON.parse(JSON.stringify(allPages[pageName]));
+
+if(shuffleMode){
+shuffleArray(quizData);
+quizData.forEach(q => shuffleArray(q.options));
+}
+
+current = 0;
+answers = new Array(quizData.length).fill(null);
+visited = new Array(quizData.length).fill(false);
+
+document.getElementById("result").innerHTML = "";
+
+loadQuestion();
+}
+
+// =============================
+
+function restartPage(){
+loadPage(currentPage);
+}
+
+// =============================
 
 function loadQuestion(){
 
@@ -286,8 +412,10 @@ for(let i=0;i<q.options.length;i++){
 let className = "option";
 
 if(answers[current] !== null){
-if(i === q.answer) className += " correct";
-else if(i === answers[current]) className += " wrong";
+if(q.options[i] === q.correctAnswer)
+className += " correct";
+else if(i === answers[current])
+className += " wrong";
 }
 
 html += '<div class="'+className+'" onclick="selectAnswer('+i+')">'+q.options[i]+'</div>';
@@ -305,6 +433,8 @@ document.getElementById("explanation").innerHTML = "";
 loadNavigation();
 updateSummary();
 }
+
+// =============================
 
 function selectAnswer(index){
 answers[current] = index;
@@ -330,6 +460,8 @@ current = i;
 loadQuestion();
 }
 
+// =============================
+
 function loadNavigation(){
 
 let navHTML = "";
@@ -348,6 +480,8 @@ navHTML += '<button class="'+className+'" onclick="goToQuestion('+i+')">'+(i+1)+
 document.getElementById("navPanel").innerHTML = navHTML;
 }
 
+// =============================
+
 function updateSummary(){
 
 let answered = answers.filter(a=>a!==null).length;
@@ -359,19 +493,46 @@ document.getElementById("notAnsweredCount").innerText = notAnswered;
 document.getElementById("notVisitedCount").innerText = notVisited;
 }
 
+// =============================
+
 function showResult(){
 
 let score = 0;
 
 for(let i=0;i<quizData.length;i++){
-if(answers[i] === quizData[i].answer) score++;
+if(quizData[i].options[answers[i]] === quizData[i].correctAnswer){
+score++;
+}
 }
 
 document.getElementById("result").innerHTML =
 "<h3>Your Score: "+score+" / "+quizData.length+"</h3>";
 }
 
-loadQuestion();
+// =============================
+
+window.onload = function(){
+
+let pageSelect = document.getElementById("pageSelect");
+
+for(let page in allPages){
+let option = document.createElement("option");
+option.value = page;
+option.text = page;
+pageSelect.appendChild(option);
+}
+
+pageSelect.onchange = function(){
+loadPage(this.value);
+};
+
+document.getElementById("modeSelect").onchange = function(){
+shuffleMode = (this.value === "true");
+loadPage(pageSelect.value);
+};
+
+loadPage(Object.keys(allPages)[0]);
+};
 
 </script>
 
